@@ -6,6 +6,9 @@ import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 
+/**
+ * Data entity that represents Version attributes of JavaScript Framework.
+ */
 @Entity
 public class FrameworkVersion {
 

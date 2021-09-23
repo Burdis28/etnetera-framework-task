@@ -150,6 +150,11 @@ public class JavaScriptFrameworkModel {
         return "Framework was successfully edited.";
     }
 
+    /**
+     * Method for deleting specific JavaScript Framework based on given ID.
+     * @param id primary identificator
+     * @return success message
+     */
     public String delete(Long id) {
         // HDS 1 - Validate input ID.
         Validator.validateDeleteJavaScriptFramework(id);
@@ -161,6 +166,11 @@ public class JavaScriptFrameworkModel {
         return "Framework was successfully deleted.";
     }
 
+    /**
+     * Method for finding JavaScript Frameworks based on given criteria.
+     * @param dtoIn dtoIn object
+     * @return list of found objects
+     */
     public List<JavaScriptFramework> findByCriteria(FrameworkFindCriteriaDtoIn dtoIn) {
         // HDS 1 - Filter all frameworks based on given criteria from DtoIn.
         List<JavaScriptFramework> frameworks = frameworkService.listByCriteria(dtoIn);

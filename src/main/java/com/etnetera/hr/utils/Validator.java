@@ -5,6 +5,9 @@ import com.etnetera.hr.dto.JavaScriptFrameworkDtoIn;
 import com.etnetera.hr.dto.JavaScriptFrameworkEditDtoIn;
 import com.etnetera.hr.exceptions.FrameworkValidationException;
 
+/**
+ * Validator class for validations of operations related to JavaScript Frameworks.
+ */
 public class Validator {
 
     public static final String dtoInNull = "DtoIn cannot be null.";
