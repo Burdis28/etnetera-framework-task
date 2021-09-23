@@ -1,8 +1,10 @@
 package com.etnetera.hr.controller;
 
 import com.etnetera.hr.data.JavaScriptFramework;
+import com.etnetera.hr.dto.FrameworkFindCriteriaDtoIn;
 import com.etnetera.hr.dto.JavaScriptFrameworkDtoIn;
 import com.etnetera.hr.dto.JavaScriptFrameworkDtoOut;
+import com.etnetera.hr.dto.JavaScriptFrameworkEditDtoIn;
 import com.etnetera.hr.model.JavaScriptFrameworkModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -41,13 +43,24 @@ public class JavaScriptFrameworkController {
             produces = "application/json",
             method = RequestMethod.POST,
             value = "/editFramework")
-    public String edit(@RequestBody JavaScriptFramework framework) {
+    public String edit(@RequestBody JavaScriptFrameworkEditDtoIn framework) {
         return frameworkModel.edit(framework);
     }
 
-    @PostMapping("/deleteFramework")
-    public String delete(@RequestParam(name = "id") int id) {
+    @RequestMapping(consumes = "application/json",
+            produces = "application/json",
+            method = RequestMethod.POST,
+            value = "/deleteFramework")
+    public String delete(@RequestParam(name = "id") Long id) {
         return frameworkModel.delete(id);
+    }
+
+    @RequestMapping(consumes = "application/json",
+            produces = "application/json",
+            method = RequestMethod.POST,
+            value = "/findFramework")
+    public List<JavaScriptFramework> find(@RequestBody FrameworkFindCriteriaDtoIn dtoIn) {
+        return frameworkModel.findByCriteria(dtoIn);
     }
 
     @PostMapping("/initializeTestData")

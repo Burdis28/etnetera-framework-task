@@ -3,8 +3,10 @@ package com.etnetera.hr;
 import com.etnetera.hr.controller.JavaScriptFrameworkController;
 import com.etnetera.hr.data.FrameworkVersion;
 import com.etnetera.hr.data.JavaScriptFramework;
+import com.etnetera.hr.dto.FrameworkFindCriteriaDtoIn;
 import com.etnetera.hr.dto.FrameworkVersionDtoIn;
 import com.etnetera.hr.dto.JavaScriptFrameworkDtoIn;
+import com.etnetera.hr.exceptions.FrameworkValidationException;
 import com.etnetera.hr.repository.JavaScriptFrameworkService;
 import com.etnetera.hr.utils.TestUtils;
 import com.etnetera.hr.utils.Validator;
@@ -13,7 +15,9 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.hamcrest.core.StringContains;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +58,16 @@ public class JavaScriptFrameworkTests {
     @Autowired
     private JavaScriptFrameworkController controller;
 
+    @Before
+    public void beforeTests() {
+
+    }
+
+    @After
+    public void afterTests() {
+        frameworkService.deleteAll();
+    }
+
     @Test
     public void createJavaScriptFrameworkHDSControllerTest() throws Exception {
         JavaScriptFrameworkDtoIn dtoIn = createTestFrameworkDtoIn();
@@ -69,8 +83,13 @@ public class JavaScriptFrameworkTests {
 
         mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8)
                         .content(requestJson))
+                .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string(StringContains.containsString("Successful creation of JavaScript Framework.")));
+
+        List<JavaScriptFramework> frameworksInDb = new ArrayList<>();
+        frameworkService.listAll().spliterator().forEachRemaining(frameworksInDb::add);
+        Assert.assertEquals(frameworksInDb.size(), 1);
     }
 
     @Test
@@ -91,7 +110,7 @@ public class JavaScriptFrameworkTests {
             mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8)
                     .content(requestJson));
         } catch (Exception exception) {
-            Assert.assertEquals(exception.getCause().getMessage(), Validator.nameValidation);
+            Assert.assertEquals(exception.getCause().getMessage(), FrameworkValidationException.errorPrefix + Validator.nameValidation);
         }
     }
 
@@ -100,13 +119,159 @@ public class JavaScriptFrameworkTests {
         JavaScriptFramework framework = getTestJavaScriptFramework();
         frameworkService.create(framework);
 
-        this.mockMvc.perform(get("/frameworks"))
+        mockMvc.perform(get("/frameworks"))
                 .andDo(print())
                 .andExpect(status().isOk());
 
         List<JavaScriptFramework> listFrameworks = controller.frameworks();
         Assert.assertEquals(listFrameworks.size(), 1);
         Assert.assertEquals(listFrameworks.get(0).getName(), framework.getName());
+    }
+
+    @Test
+    public void deleteJavaScriptFrameworksHDSControllerTest() throws Exception {
+        JavaScriptFramework framework = getTestJavaScriptFramework();
+        JavaScriptFramework framework2 = getTestJavaScriptFramework();
+        framework2.setName("remainingFramework");
+        JavaScriptFramework createdFramework = frameworkService.create(framework);
+        JavaScriptFramework createdFramework2 = frameworkService.create(framework2);
+
+        String url = "/deleteFramework";
+
+        mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8)
+                        .param("id", String.valueOf(createdFramework.getId())))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string(StringContains.containsString("Framework was successfully deleted.")));
+
+        List<JavaScriptFramework> listFrameworks = controller.frameworks();
+        Assert.assertEquals(listFrameworks.size(), 1);
+        Assert.assertEquals(listFrameworks.get(0).getName(), createdFramework2.getName());
+    }
+
+    @Test
+    public void deleteJavaScriptFrameworksValidationFailTest() {
+        JavaScriptFramework framework = getTestJavaScriptFramework();
+        JavaScriptFramework framework2 = getTestJavaScriptFramework();
+        framework2.setName("remainingFramework");
+        frameworkService.create(framework);
+        frameworkService.create(framework2);
+
+        String url = "/deleteFramework";
+
+        try {
+            mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8)
+                            .param("id", ""))
+                    .andDo(print());
+        } catch (Exception exception) {
+            Assert.assertEquals(exception.getCause().getMessage(), FrameworkValidationException.errorPrefix + Validator.idFilledValidation);
+        }
+    }
+
+    @Test
+    public void editJavaScriptFrameworkHDSTest() throws Exception {
+        JavaScriptFramework framework = getTestJavaScriptFramework();
+        JavaScriptFramework createdFramework = frameworkService.create(framework);
+
+        createdFramework.setName("changedName");
+
+        String url = "/editFramework";
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+
+        ObjectWriter ow = mapper.writer().withDefaultPrettyPrinter();
+        String requestJson=ow.writeValueAsString(createdFramework);
+
+        mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8)
+                        .content(requestJson))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().string(StringContains.containsString("Framework was successfully edited.")));
+
+        Assert.assertEquals(frameworkService.get(createdFramework.getId()).get().getName(), "changedName");
+        Assert.assertEquals(frameworkService.get(createdFramework.getId()).get().getHypeLevel(),
+                framework.getHypeLevel());
+    }
+
+    @Test
+    public void editJavaScriptFrameworkValidationFailTest() throws Exception {
+        JavaScriptFramework framework = getTestJavaScriptFramework();
+        JavaScriptFramework createdFramework = frameworkService.create(framework);
+
+        createdFramework.setId(null);
+
+        String url = "/editFramework";
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+
+        ObjectWriter ow = mapper.writer().withDefaultPrettyPrinter();
+        String requestJson=ow.writeValueAsString(createdFramework);
+
+        try {
+            mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8).content(requestJson))
+                    .andDo(print());
+        } catch (Exception exception) {
+            Assert.assertEquals(exception.getCause().getMessage(), FrameworkValidationException.errorPrefix + Validator.idFilledValidation);
+        }
+    }
+
+    @Test
+    public void findJavaScriptFrameworkHDSTest() throws Exception {
+        JavaScriptFramework framework = getTestJavaScriptFramework();
+        JavaScriptFramework framework2 = getTestJavaScriptFramework();
+        framework2.setName("otherFramework");
+        JavaScriptFramework createdFramework = frameworkService.create(framework);
+        JavaScriptFramework createdFramework2 = frameworkService.create(framework2);
+
+        FrameworkFindCriteriaDtoIn dtoIn = new FrameworkFindCriteriaDtoIn();
+        dtoIn.setName(framework2.getName());
+
+        String url = "/findFramework";
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+
+        ObjectWriter ow = mapper.writer().withDefaultPrettyPrinter();
+        String requestJson=ow.writeValueAsString(dtoIn);
+
+        mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8)
+                        .content(requestJson))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").exists())
+                .andExpect(jsonPath("$[0].id").value(createdFramework2.getId()));
+    }
+
+    @Test
+    public void findJavaScriptFrameworkNothingFoundTest() throws Exception {
+        JavaScriptFramework framework = getTestJavaScriptFramework();
+        JavaScriptFramework framework2 = getTestJavaScriptFramework();
+        framework2.setName("otherFramework");
+        frameworkService.create(framework);
+        frameworkService.create(framework2);
+
+        FrameworkFindCriteriaDtoIn dtoIn = new FrameworkFindCriteriaDtoIn();
+        dtoIn.setName("NonExistingFrameworksName");
+
+        String url = "/findFramework";
+
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(SerializationFeature.WRAP_ROOT_VALUE, false);
+
+        ObjectWriter ow = mapper.writer().withDefaultPrettyPrinter();
+        String requestJson=ow.writeValueAsString(dtoIn);
+
+        mockMvc.perform(post(url).contentType(TestUtils.APPLICATION_JSON_UTF8)
+                        .content(requestJson))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").doesNotExist());
     }
 
     private JavaScriptFrameworkDtoIn createTestFrameworkDtoIn() {

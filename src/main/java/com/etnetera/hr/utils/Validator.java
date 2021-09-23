@@ -2,8 +2,12 @@ package com.etnetera.hr.utils;
 
 import com.etnetera.hr.dto.FrameworkVersionDtoIn;
 import com.etnetera.hr.dto.JavaScriptFrameworkDtoIn;
+import com.etnetera.hr.dto.JavaScriptFrameworkEditDtoIn;
 import com.etnetera.hr.exceptions.FrameworkValidationException;
 
+/**
+ * Validator class for validations of operations related to JavaScript Frameworks.
+ */
 public class Validator {
 
     public static final String dtoInNull = "DtoIn cannot be null.";
@@ -13,6 +17,7 @@ public class Validator {
     public static final String versionsValidation = "Versions parameter in DtoIn cannot be empty.";
     public static final String versionsParameterValidation = "Version in DtoIn has to be a decimal number with 4 precision" +
             "and 2 scale.";
+    public static final String idFilledValidation = "ID parameter has to be filled.";
 
     public static void validateJavaScriptFrameworkDtoIn(JavaScriptFrameworkDtoIn dtoIn) {
 
@@ -48,5 +53,26 @@ public class Validator {
                 throw new FrameworkValidationException(versionsParameterValidation);
             }
         }
+    }
+
+    public static void validateEditJavaScriptFramework(JavaScriptFrameworkEditDtoIn framework) {
+
+        // HDS 1.1 - Validate that framework is not null.
+        if (framework == null) {
+            throw new FrameworkValidationException(dtoInNull);
+        }
+
+        // HDS 1.2 - Validate that ID is not null.
+        if (framework.getId() == null) {
+            throw new FrameworkValidationException(idFilledValidation);
+        }
+    }
+
+    public static void validateDeleteJavaScriptFramework(Long id) {
+        // HDS 1.1 - Validate that ID is not null.
+        if (id == null) {
+            throw new FrameworkValidationException(idFilledValidation);
+        }
+
     }
 }

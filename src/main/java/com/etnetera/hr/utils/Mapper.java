@@ -11,6 +11,9 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Mapper class for mapping of JavaScript Frameworks and related DTO objects.
+ */
 public abstract class Mapper {
 
     public static JavaScriptFrameworkDtoOut mapFrameworkToDtoOut(JavaScriptFramework framework) {
