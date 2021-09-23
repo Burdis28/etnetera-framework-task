@@ -80,7 +80,7 @@ public class JavaScriptFramework {
 
 	@Override
 	public String toString() {
-		return "JavaScriptFramework [id=" + id + ", name=" + name + ", deprecation date=" + deprecationDate + "]";
+		return "JavaScriptFramework [id=" + id + ", name=" + name + ", deprecation date=" + deprecationDate +
+				", hypelevel=" + hypeLevel + "]";
 	}
-
 }

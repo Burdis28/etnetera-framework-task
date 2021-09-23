@@ -17,14 +17,4 @@ public class TestUtils {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         return mapper.writeValueAsBytes(object);
     }
-
-    public static String createStringWithLength(int length) {
-        StringBuilder builder = new StringBuilder();
-
-        for (int index = 0; index < length; index++) {
-            builder.append("a");
-        }
-
-        return builder.toString();
-    }
 }

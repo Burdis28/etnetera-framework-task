@@ -2,8 +2,10 @@ package com.etnetera.hr.model;
 
 import com.etnetera.hr.data.FrameworkVersion;
 import com.etnetera.hr.data.JavaScriptFramework;
+import com.etnetera.hr.dto.FrameworkFindCriteriaDtoIn;
 import com.etnetera.hr.dto.JavaScriptFrameworkDtoIn;
 import com.etnetera.hr.dto.JavaScriptFrameworkDtoOut;
+import com.etnetera.hr.dto.JavaScriptFrameworkEditDtoIn;
 import com.etnetera.hr.exceptions.FrameworkValidationException;
 import com.etnetera.hr.repository.JavaScriptFrameworkService;
 import com.etnetera.hr.utils.Mapper;
@@ -15,12 +17,13 @@ import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class JavaScriptFrameworkModel {
 
     private JavaScriptFrameworkService frameworkService;
-    private static final String frameworkName = "frameworkTest-";
+    private static final String frameworkTestName = "frameworkTest-";
 
     @Autowired
     public JavaScriptFrameworkModel(JavaScriptFrameworkService frameworkService) {
@@ -32,9 +35,12 @@ public class JavaScriptFrameworkModel {
      * @return list of DTO out framework objects.
      */
     public List<JavaScriptFramework> listFrameworks() {
+        // HDS 1 - Prepare a list of JavaScriptFramework objects
         List<JavaScriptFramework> frameworkList = new ArrayList<>();
+        // HDS 2 - Fill the list with values from database using service layer.
         frameworkService.listAll().iterator().forEachRemaining(frameworkList::add);
 
+        // HDS 3 - Return a list of existing JavaScriptFramework objects.
         return frameworkList;
 //
 //        List<JavaScriptFrameworkDtoOut> dtoOut = new ArrayList<>();
@@ -49,6 +55,7 @@ public class JavaScriptFrameworkModel {
      * @param count number of frameworks to create
      * @return Confirmation of success or error message
      */
+    //TODO - delete in production version
     public String initializeTestData(int count) {
         List<JavaScriptFramework> frameworkList = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -63,9 +70,10 @@ public class JavaScriptFrameworkModel {
         return "Successful initialization of test data.";
     }
 
+    //TODO - delete in production version
     private JavaScriptFramework createTestFramework(int nameNum) {
         JavaScriptFramework framework = new JavaScriptFramework();
-        framework.setName(frameworkName + nameNum);
+        framework.setName(frameworkTestName + nameNum);
         framework.setDeprecationDate(ZonedDateTime.now().plusYears(2));
         framework.setHypeLevel(7);
 
@@ -101,7 +109,7 @@ public class JavaScriptFrameworkModel {
         } catch (RuntimeException exception) {
             // AS 3.1 - Return a data persist error.
             System.out.println(exception.getMessage());
-            return "Creating JavaScript Framework has failed.";
+            throw new RuntimeException("Creating JavaScript Framework has failed.");
         }
         // HDS 4 - Return a success confirmation message.
         return "Successful creation of JavaScript Framework.";
@@ -109,15 +117,55 @@ public class JavaScriptFrameworkModel {
 
     /**
      * Method for editing a JavaScriptFramework object.
-     * @param framework framework to be edited
+     * @param newFramework framework to be edited
      * @return Success or error message
      */
-    public String edit(JavaScriptFramework framework) {
-        return null;
+    public String edit(JavaScriptFrameworkEditDtoIn newFramework) {
+        // HDS 1 - Validate input framework object.
+        Validator.validateEditJavaScriptFramework(newFramework);
+
+        // HDS 2 - Obtain a JavaScriptFramework object from database that corresponds to given framework (use ID indicator).
+        Optional<JavaScriptFramework> framework = frameworkService.get(newFramework.getId());
+
+        // HDS 3 - Set all attributes that are filled in dtoIn to Framework obtained from database.
+        if (framework.isEmpty()) {
+            // AS 3.1 - If no framework is out, throw an exception with appropriate message.
+            throw new RuntimeException("JavaScript Framework with given id: " + newFramework.getId() +
+                    " was not found and could not be edited.");
+        } else {
+            if (newFramework.getName() != null && !newFramework.getName().isEmpty()) {
+                framework.get().setName(newFramework.getName());
+            }
+            if (newFramework.getDeprecationDate() != null) {
+                framework.get().setDeprecationDate(newFramework.getDeprecationDate());
+            }
+            if (newFramework.getHypeLevel() != null) {
+                framework.get().setHypeLevel(newFramework.getHypeLevel());
+            }
+        }
+        // HDS 4 - Save a JavaScriptFramework with changed attributes.
+        frameworkService.update(framework.get());
+
+        // HDS 5 - Return a success message.
+        return "Framework was successfully edited.";
     }
 
-    public String delete(int id) {
+    public String delete(Long id) {
+        // HDS 1 - Validate input ID.
+        Validator.validateDeleteJavaScriptFramework(id);
 
-        return null;
+        // HDS 2 - Delete framework.
+        frameworkService.delete(id);
+
+        // HDS 3 - Return a success message.
+        return "Framework was successfully deleted.";
+    }
+
+    public List<JavaScriptFramework> findByCriteria(FrameworkFindCriteriaDtoIn dtoIn) {
+        // HDS 1 - Filter all frameworks based on given criteria from DtoIn.
+        List<JavaScriptFramework> frameworks = frameworkService.listByCriteria(dtoIn);
+
+        // HDS 2 - Return frameworks.
+        return frameworks;
     }
 }
